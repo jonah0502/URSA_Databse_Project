@@ -125,6 +125,20 @@ void loop() {
   // function definition further below.
   MQTT_connect();
   // this is our 'wait for incoming subscription packets' busy subloop
+  Adafruit_MQTT_Subscribe *subscription;
+  while ((subscription = mqtt.readSubscription(5000))) {
+    if (subscription == &onoffbutton) {
+      Serial.print(F("Got: "));
+      Serial.println((char *)onoffbutton.lastread);
+
+      if (0 == strcmp((char *)onoffbutton.lastread, "OFF")) {
+        digitalWrite(LEDPIN, LOW);
+      }
+      if (0 == strcmp((char *)onoffbutton.lastread, "ON")) {
+        digitalWrite(LEDPIN, HIGH);
+      }
+    }
+  }
   int32_t moistureVal = Loom.get_data_as<int32_t>("STEMMA_7", "capactive");
   // Now we can publish stuff!
   Serial.print(F("\nSending soilSen val "));
