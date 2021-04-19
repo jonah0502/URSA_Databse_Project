@@ -13,6 +13,7 @@
 #include "Adafruit_MQTT_Client.h"
 #include <WiFi101.h>
 #include <Loom.h>
+#include <ArduinoJson.h>
 
 // Include configuration
 const char* json_config = 
@@ -50,7 +51,7 @@ int status = WL_IDLE_STATUS;
 #define AIO_SERVER      "io.adafruit.com"
 #define AIO_SERVERPORT  1883
 #define AIO_USERNAME    "jonah0502"
-#define AIO_KEY         "aio_zKjo06LEDXaBJ3tSBPFMSAaa7y9x"
+#define AIO_KEY         "aio_aujl3597cVCz1V1jc4WMMmyHospp"
 
 /************ Global State (you don't need to change this!) ******************/
 
@@ -115,26 +116,16 @@ uint32_t x=0;
 
 
 void loop() {
+
+
+
+  
   // Ensure the connection to the MQTT server is alive (this will make the first
   // connection and automatically reconnect when disconnected).  See the MQTT_connect
   // function definition further below.
   MQTT_connect();
   // this is our 'wait for incoming subscription packets' busy subloop
-  Adafruit_MQTT_Subscribe *subscription;
-  while ((subscription = mqtt.readSubscription(5000))) {
-    if (subscription == &onoffbutton) {
-      Serial.print(F("Got: "));
-      Serial.println((char *)onoffbutton.lastread);
-
-      if (0 == strcmp((char *)onoffbutton.lastread, "OFF")) {
-        digitalWrite(LEDPIN, LOW);
-      }
-      if (0 == strcmp((char *)onoffbutton.lastread, "ON")) {
-        digitalWrite(LEDPIN, HIGH);
-      }
-    }
-  }
-  auto moistureVal = Loom.internal_json();
+  int32_t moistureVal = Loom.get_data_as<int32_t>("STEMMA_7", "capactive");
   // Now we can publish stuff!
   Serial.print(F("\nSending soilSen val "));
   Serial.print(moistureVal);
