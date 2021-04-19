@@ -51,13 +51,13 @@ int status = WL_IDLE_STATUS;
 #define AIO_SERVER      "io.adafruit.com"
 #define AIO_SERVERPORT  1883
 #define AIO_USERNAME    "jonah0502"
-#define AIO_KEY         "aio_aujl3597cVCz1V1jc4WMMmyHospp"
+#define AIO_KEY         "aio_FeHI94Kxt6CQaLiaUwoGjuKwPuEt"
 
 /************ Global State (you don't need to change this!) ******************/
 
 String groupName = String(String(Loom.get_device_name()) + String(Loom.get_instance_num()));
 String tempURL = String(String(AIO_USERNAME) + "/groups/" + groupName + "/json");
-String tsl_ir_url = String(tempURL + "tsl2591_ir");
+//String tsl_ir_url = String(tempURL + "tsl2591_ir");
 
 //Set up the wifi client
 WiFiClient client;
@@ -74,7 +74,7 @@ Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO
 Adafruit_MQTT_Publish soilSen = Adafruit_MQTT_Publish(&mqtt, tempURL.c_str());
 
 // Setup a feed called 'onoff' for subscribing to changes.
-Adafruit_MQTT_Subscribe onoffbutton = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/onoff");
+//Adafruit_MQTT_Subscribe onoffbutton = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/onoff");
 
 /*************************** Sketch Code ************************************/
 
@@ -109,42 +109,34 @@ void setup() {
   Serial.println("ATWINC OK!");
   
   pinMode(LEDPIN, OUTPUT);
-  mqtt.subscribe(&onoffbutton);
 }
 
 uint32_t x=0;
 
 
 void loop() {
+  StaticJsonDocument<300> JSONencoder ;
+  JSONencoder["sensorType"] = "Moisture";
+  JsonArray values = JSONencoder.createNestedArray("values");
+ 
+  values.add(20);
+  values.add(21);
+  values.add(23);
 
-
-
+  char JSONmessageBuffer[100];
+  serializeJson(JSONencoder, JSONmessageBuffer);
   
   // Ensure the connection to the MQTT server is alive (this will make the first
   // connection and automatically reconnect when disconnected).  See the MQTT_connect
   // function definition further below.
   MQTT_connect();
   // this is our 'wait for incoming subscription packets' busy subloop
-  Adafruit_MQTT_Subscribe *subscription;
-  while ((subscription = mqtt.readSubscription(5000))) {
-    if (subscription == &onoffbutton) {
-      Serial.print(F("Got: "));
-      Serial.println((char *)onoffbutton.lastread);
-
-      if (0 == strcmp((char *)onoffbutton.lastread, "OFF")) {
-        digitalWrite(LEDPIN, LOW);
-      }
-      if (0 == strcmp((char *)onoffbutton.lastread, "ON")) {
-        digitalWrite(LEDPIN, HIGH);
-      }
-    }
-  }
-  int32_t moistureVal = Loom.get_data_as<int32_t>("STEMMA_7", "capactive");
+  //int32_t moistureVal = Loom.get_data_as<int32_t>("STEMMA_7", "capactive");
   // Now we can publish stuff!
   Serial.print(F("\nSending soilSen val "));
-  Serial.print(moistureVal);
+  //Serial.print(moistureVal);
   Serial.print("...");
-  if (! soilSen.publish(moistureVal)) {
+  if (! soilSen.publish(JSONmessageBuffer)) {
     Serial.println(F("Failed"));
   } else {
     Serial.println(F("OK!"));
