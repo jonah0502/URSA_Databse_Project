@@ -12,24 +12,25 @@
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
 #include <WiFi101.h>
-#include <Loom.h>
 #include <ArduinoJson.h>
+#define LEDPIN 13
+
+
+#include <Loom.h>
 
 // Include configuration
 const char* json_config = 
 #include "config.h"
 ;
 
-#define LEDPIN 13
-
 
 // Set enabled modules
 LoomFactory<
-  Enable::Internet::Disabled,
+  Enable::Internet::WiFi,
   Enable::Sensors::Enabled,
-  Enable::Radios::Enabled,
+  Enable::Radios::Disabled,
   Enable::Actuators::Enabled,
-  Enable::Max::Enabled
+  Enable::Max::Disabled
 > ModuleFactory{};
 
 LoomManager Loom{ &ModuleFactory };
@@ -51,13 +52,10 @@ int status = WL_IDLE_STATUS;
 #define AIO_SERVER      "io.adafruit.com"
 #define AIO_SERVERPORT  1883
 #define AIO_USERNAME    "jonah0502"
-#define AIO_KEY         "aio_FeHI94Kxt6CQaLiaUwoGjuKwPuEt"
+#define AIO_KEY         "aio_cboa92Qco42irqAHn6L4nPT11js1"
 
 /************ Global State (you don't need to change this!) ******************/
 
-String groupName = String(String(Loom.get_device_name()) + String(Loom.get_instance_num()));
-String tempURL = String(String(AIO_USERNAME) + "/groups/" + groupName + "/json");
-//String tsl_ir_url = String(tempURL + "tsl2591_ir");
 
 //Set up the wifi client
 WiFiClient client;
@@ -71,7 +69,7 @@ Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO
 
 // Setup a feed called 'photocell' for publishing.
 // Notice MQTT paths for AIO follow the form: <username>/feeds/<feedname>
-Adafruit_MQTT_Publish soilSen = Adafruit_MQTT_Publish(&mqtt, tempURL.c_str());
+//Adafruit_MQTT_Publish soilSen = Adafruit_MQTT_Publish(&mqtt, tempURL.c_str());
 
 // Setup a feed called 'onoff' for subscribing to changes.
 //Adafruit_MQTT_Subscribe onoffbutton = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/onoff");
@@ -84,11 +82,12 @@ void setup() {
   Loom.begin_serial(true);
   Loom.parse_config(json_config);
   Loom.print_config();
-
-
   Loom.measure();
   Loom.package();
   Loom.display_data();
+
+
+
 
 //mqtt start
   WiFi.setPins(WINC_CS, WINC_IRQ, WINC_RST, WINC_EN);
@@ -111,21 +110,33 @@ void setup() {
   pinMode(LEDPIN, OUTPUT);
 }
 
-uint32_t x=0;
-
 
 void loop() {
+
+char name[20];
+Loom.get_device_name(name);
+
+String groupName = String(name + String(Loom.get_instance_num()));
+groupName.toLowerCase();
+
+
+String tempURL = String(String(AIO_USERNAME) + "/groups/" + groupName + "/json");
+
+
+Adafruit_MQTT_Publish soilSen = Adafruit_MQTT_Publish(&mqtt, tempURL.c_str());
+
+  
   StaticJsonDocument<300> JSONencoder ;
   JSONencoder["sensorType"] = "Moisture";
-  JsonArray values = JSONencoder.createNestedArray("values");
- 
-  values.add(20);
-  values.add(21);
-  values.add(23);
+  JSONencoder["value"] = 20;
+  Serial.println(groupName);
+  //Serial.println(Loom.device_name);
+  Serial.println(tempURL);
+  Loom.print_config(true);
 
   char JSONmessageBuffer[100];
   serializeJson(JSONencoder, JSONmessageBuffer);
-  
+  Serial.println(JSONmessageBuffer);
   // Ensure the connection to the MQTT server is alive (this will make the first
   // connection and automatically reconnect when disconnected).  See the MQTT_connect
   // function definition further below.

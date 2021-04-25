@@ -1,7 +1,7 @@
 "{\
   'general':\
   {\
-    'device_name':'jonah',\
+    'device_name':'Jonah',\
     'instance_num':1,\
     'interval':3000\
   },\
