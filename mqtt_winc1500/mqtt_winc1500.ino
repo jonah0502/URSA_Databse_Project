@@ -52,7 +52,7 @@ int status = WL_IDLE_STATUS;
 #define AIO_SERVER      "io.adafruit.com"
 #define AIO_SERVERPORT  1883
 #define AIO_USERNAME    "jonah0502"
-#define AIO_KEY         "aio_cboa92Qco42irqAHn6L4nPT11js1"
+#define AIO_KEY         "aio_OTdV17Edt09Pg2mBZTOQGpoIu833"
 
 /************ Global State (you don't need to change this!) ******************/
 
@@ -120,22 +120,27 @@ String groupName = String(name + String(Loom.get_instance_num()));
 groupName.toLowerCase();
 
 
-String tempURL = String(String(AIO_USERNAME) + "/groups/" + groupName + "/json");
+char tempURL[50];
+snprintf(tempURL, 50, "%s%s%s", AIO_USERNAME, "/groups/", groupName.c_str());
+//String tempURL = String(String(AIO_USERNAME) + "/groups/" + groupName + "/json");
 
 
-Adafruit_MQTT_Publish soilSen = Adafruit_MQTT_Publish(&mqtt, tempURL.c_str());
+Adafruit_MQTT_Publish soilSen = Adafruit_MQTT_Publish(&mqtt, tempURL);
 
   
   StaticJsonDocument<300> JSONencoder ;
-  JSONencoder["sensorType"] = "Moisture";
-  JSONencoder["value"] = 20;
+  JsonObject root = JSONencoder.to<JsonObject>();
+  JsonObject feeds = root.createNestedObject("feeds");
+  feeds["key-1"] = 20;
+  feeds["key-2"] = 30;
+  feeds["key-3"] = 40;
   Serial.println(groupName);
   //Serial.println(Loom.device_name);
   Serial.println(tempURL);
   Loom.print_config(true);
 
   char JSONmessageBuffer[100];
-  serializeJson(JSONencoder, JSONmessageBuffer);
+  serializeJson(root, JSONmessageBuffer);
   Serial.println(JSONmessageBuffer);
   // Ensure the connection to the MQTT server is alive (this will make the first
   // connection and automatically reconnect when disconnected).  See the MQTT_connect
