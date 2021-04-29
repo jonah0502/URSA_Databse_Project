@@ -52,7 +52,7 @@ int status = WL_IDLE_STATUS;
 #define AIO_SERVER      "io.adafruit.com"
 #define AIO_SERVERPORT  1883
 #define AIO_USERNAME    "jonah0502"
-#define AIO_KEY         "aio_OTdV17Edt09Pg2mBZTOQGpoIu833"
+#define AIO_KEY         "aio_aVgf34Meq0q9Jk34RDgkHiWzO8Gp"
 
 /************ Global State (you don't need to change this!) ******************/
 
@@ -80,11 +80,8 @@ void setup() {
 //loom stuff
   Loom.begin_serial(true);
   Loom.parse_config(json_config);
-  Loom.print_config();
-  /*Loom.measure();
-  Loom.package();
-  Loom.display_data();
-*/
+  //Loom.print_config();
+
 
 
 
@@ -113,7 +110,7 @@ void setup() {
 void loop() {
   Loom.measure();
   Loom.package();
-  Loom.display_data();
+ // Loom.display_data();
 
   char name[20];
   Loom.get_device_name(name);
@@ -129,20 +126,41 @@ void loop() {
 
   Adafruit_MQTT_Publish soilSen = Adafruit_MQTT_Publish(&mqtt, tempURL);
 
-  
+  //JSON PARSING
+  JsonObject internal = Loom.internal_json();
+  JsonArray arr = internal["contents"].as<JsonArray>();
+  Serial.println("begin test data");
+
+
+  //JSON TO BE PUBLISHED 
   StaticJsonDocument<300> JSONencoder ;
   JsonObject root = JSONencoder.to<JsonObject>();
   JsonObject feeds = root.createNestedObject("feeds");
   feeds["STEMMA-capacitive"] = Loom.get_data_as<int32_t>("STEMMA_5", "capactive");
   feeds["SHT31D-temp"] = Loom.get_data_as<float>("SHT31D_4", "temp");
   feeds["TSL2591-vis"] = Loom.get_data_as<int>("TSL2591_2", "Vis");
-  //Serial.println(groupName);
-  //Serial.println(tempURL);
-  //Loom.print_config(true);
+/*
+  for (JsonObject item: arr){
+    if ((item["module"].as<char*>() != "Packet") && (String(item["module"].as<char*>()) != "Analog")){
+      String modName = item["module"].as<char*>();
+      JsonObject data = item["data"].as<JsonObject>();
+      for (JsonPair kv : data) {
+        String valName = kv.key().c_str();
+        String feedName = (modName + "-" + valName);
+        if(valName != "Full" && valName != "capactive"){
+          feeds[feedName] = kv.value().as<int>();
+          }
+        
+    }
+  }
+ }*/
+  
+  Serial.println(groupName);
+  Serial.println(tempURL);
 
   char JSONmessageBuffer[100];
   serializeJson(root, JSONmessageBuffer);
-  Serial.println(JSONmessageBuffer);
+  serializeJsonPretty(root, Serial);
   // Ensure the connection to the MQTT server is alive (this will make the first
   // connection and automatically reconnect when disconnected).  See the MQTT_connect
   // function definition further below.
