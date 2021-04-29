@@ -29,7 +29,7 @@ LoomFactory<
   Enable::Internet::WiFi,
   Enable::Sensors::Enabled,
   Enable::Radios::Disabled,
-  Enable::Actuators::Enabled,
+  Enable::Actuators::Disabled,
   Enable::Max::Disabled
 > ModuleFactory{};
 
@@ -78,14 +78,13 @@ Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO
 
 void setup() {
 //loom stuff
-  Loom.begin_LED();
   Loom.begin_serial(true);
   Loom.parse_config(json_config);
   Loom.print_config();
-  Loom.measure();
+  /*Loom.measure();
   Loom.package();
   Loom.display_data();
-
+*/
 
 
 
@@ -112,32 +111,34 @@ void setup() {
 
 
 void loop() {
+  Loom.measure();
+  Loom.package();
+  Loom.display_data();
 
-char name[20];
-Loom.get_device_name(name);
+  char name[20];
+  Loom.get_device_name(name);
 
-String groupName = String(name + String(Loom.get_instance_num()));
-groupName.toLowerCase();
-
-
-char tempURL[50];
-snprintf(tempURL, 50, "%s%s%s", AIO_USERNAME, "/groups/", groupName.c_str());
-//String tempURL = String(String(AIO_USERNAME) + "/groups/" + groupName + "/json");
+  String groupName = String(name + String(Loom.get_instance_num()));
+  groupName.toLowerCase();
 
 
-Adafruit_MQTT_Publish soilSen = Adafruit_MQTT_Publish(&mqtt, tempURL);
+  char tempURL[50];
+  snprintf(tempURL, 50, "%s%s%s", AIO_USERNAME, "/groups/", groupName.c_str());
+  //String tempURL = String(String(AIO_USERNAME) + "/groups/" + groupName + "/json");
+
+
+  Adafruit_MQTT_Publish soilSen = Adafruit_MQTT_Publish(&mqtt, tempURL);
 
   
   StaticJsonDocument<300> JSONencoder ;
   JsonObject root = JSONencoder.to<JsonObject>();
   JsonObject feeds = root.createNestedObject("feeds");
-  feeds["key-1"] = 20;
-  feeds["key-2"] = 30;
-  feeds["key-3"] = 40;
-  Serial.println(groupName);
-  //Serial.println(Loom.device_name);
-  Serial.println(tempURL);
-  Loom.print_config(true);
+  feeds["STEMMA-capacitive"] = Loom.get_data_as<int32_t>("STEMMA_5", "capactive");
+  feeds["SHT31D-temp"] = Loom.get_data_as<float>("SHT31D_4", "temp");
+  feeds["TSL2591-vis"] = Loom.get_data_as<int>("TSL2591_2", "Vis");
+  //Serial.println(groupName);
+  //Serial.println(tempURL);
+  //Loom.print_config(true);
 
   char JSONmessageBuffer[100];
   serializeJson(root, JSONmessageBuffer);
@@ -147,7 +148,7 @@ Adafruit_MQTT_Publish soilSen = Adafruit_MQTT_Publish(&mqtt, tempURL);
   // function definition further below.
   MQTT_connect();
   // this is our 'wait for incoming subscription packets' busy subloop
-  //int32_t moistureVal = Loom.get_data_as<int32_t>("STEMMA_7", "capactive");
+  
   // Now we can publish stuff!
   Serial.print(F("\nSending soilSen val "));
   //Serial.print(moistureVal);
@@ -157,8 +158,6 @@ Adafruit_MQTT_Publish soilSen = Adafruit_MQTT_Publish(&mqtt, tempURL);
   } else {
     Serial.println(F("OK!"));
   }
-  Loom.measure();
-  Loom.package();
   Loom.pause();
 }
 
