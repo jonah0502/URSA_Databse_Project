@@ -52,7 +52,7 @@ int status = WL_IDLE_STATUS;
 #define AIO_SERVER      "io.adafruit.com"
 #define AIO_SERVERPORT  1883
 #define AIO_USERNAME    "jonah0502"
-#define AIO_KEY         "aio_aVgf34Meq0q9Jk34RDgkHiWzO8Gp"
+#define AIO_KEY         "aio_ZRLE308nGaeLzx3IxoA71xILR6Bw"
 
 /************ Global State (you don't need to change this!) ******************/
 
@@ -69,7 +69,7 @@ Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO
 
 // Setup a feed called 'photocell' for publishing.
 // Notice MQTT paths for AIO follow the form: <username>/feeds/<feedname>
-//Adafruit_MQTT_Publish soilSen = Adafruit_MQTT_Publish(&mqtt, tempURL.c_str());
+//Adafruit_MQTT_Publish groupObj = Adafruit_MQTT_Publish(&mqtt, tempURL.c_str());
 
 // Setup a feed called 'onoff' for subscribing to changes.
 //Adafruit_MQTT_Subscribe onoffbutton = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/onoff");
@@ -108,38 +108,43 @@ void setup() {
 
 
 void loop() {
+  //get data from loom
   Loom.measure();
   Loom.package();
- // Loom.display_data();
+  Loom.display_data();
 
   char name[20];
   Loom.get_device_name(name);
 
+
+
   String groupName = String(name + String(Loom.get_instance_num()));
   groupName.toLowerCase();
 
-
+//creates url to send to 
   char tempURL[50];
   snprintf(tempURL, 50, "%s%s%s", AIO_USERNAME, "/groups/", groupName.c_str());
   //String tempURL = String(String(AIO_USERNAME) + "/groups/" + groupName + "/json");
 
+//creates publish object
+  Adafruit_MQTT_Publish groupObj = Adafruit_MQTT_Publish(&mqtt, tempURL);
 
-  Adafruit_MQTT_Publish soilSen = Adafruit_MQTT_Publish(&mqtt, tempURL);
-
-  //JSON PARSING
+  //finds json to be parsed
   JsonObject internal = Loom.internal_json();
   JsonArray arr = internal["contents"].as<JsonArray>();
   Serial.println("begin test data");
 
 
-  //JSON TO BE PUBLISHED 
-  StaticJsonDocument<300> JSONencoder ;
+  //creates JSON TO BE PUBLISHED 
+  DynamicJsonDocument JSONencoder(1024);
   JsonObject root = JSONencoder.to<JsonObject>();
   JsonObject feeds = root.createNestedObject("feeds");
-  feeds["STEMMA-capacitive"] = Loom.get_data_as<int32_t>("STEMMA_5", "capactive");
+  /*feeds["STEMMA-capacitive"] = Loom.get_data_as<int32_t>("STEMMA_7", "capactive");
   feeds["SHT31D-temp"] = Loom.get_data_as<float>("SHT31D_4", "temp");
-  feeds["TSL2591-vis"] = Loom.get_data_as<int>("TSL2591_2", "Vis");
-/*
+  feeds["TSL2591-vis"] = Loom.get_data_as<int>("TSL2591_5", "Vis");
+  //feeds["TSL2591-ir"] = Loom.get_data_as<int>("TSL2591_5", "IR");
+*/
+//parses json
   for (JsonObject item: arr){
     if ((item["module"].as<char*>() != "Packet") && (String(item["module"].as<char*>()) != "Analog")){
       String modName = item["module"].as<char*>();
@@ -150,16 +155,17 @@ void loop() {
         if(valName != "Full" && valName != "capactive"){
           feeds[feedName] = kv.value().as<int>();
           }
-        
     }
   }
- }*/
-  
+ }
+  //prints info to console for debugging
   Serial.println(groupName);
   Serial.println(tempURL);
 
-  char JSONmessageBuffer[100];
-  serializeJson(root, JSONmessageBuffer);
+  //converts JSON to c-string
+  int sizeOfJSON = JSONencoder.capacity();
+  char JSONmessageBuffer[sizeOfJSON];
+  serializeJson(root, JSONmessageBuffer,sizeOfJSON); // needs 3rd parameter when using c -string
   serializeJsonPretty(root, Serial);
   // Ensure the connection to the MQTT server is alive (this will make the first
   // connection and automatically reconnect when disconnected).  See the MQTT_connect
@@ -168,10 +174,10 @@ void loop() {
   // this is our 'wait for incoming subscription packets' busy subloop
   
   // Now we can publish stuff!
-  Serial.print(F("\nSending soilSen val "));
-  //Serial.print(moistureVal);
+  Serial.print(F("\nSending groupObj val "));
+//publishes the data
   Serial.print("...");
-  if (! soilSen.publish(JSONmessageBuffer)) {
+  if (! groupObj.publish(JSONmessageBuffer)) {
     Serial.println(F("Failed"));
   } else {
     Serial.println(F("OK!"));

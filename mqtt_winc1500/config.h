@@ -2,8 +2,8 @@
   'general':\
   {\
     'name':'jonah',\
-    'instance':1,\
-    'interval':2000\
+    'instance':3,\
+    'interval':20000\
   },\
   'components':[\
     {\
@@ -13,6 +13,10 @@
     {\
       'name':'Multiplexer',\
       'params':'default'\
-    }\
+     },\
+    {\
+      'name':'WiFi',\
+      'params':['The Promised LAN','jzc2kms77vcmxxa8ptkyj']\
+    },\
   ]\
 }"
