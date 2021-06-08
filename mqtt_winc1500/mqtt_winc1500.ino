@@ -50,15 +50,14 @@ int status = WL_IDLE_STATUS;
 /************************* Adafruit.io Setup *********************************/
 
 #define AIO_SERVER      "io.adafruit.com"
-#define AIO_SERVERPORT  1883
+#define AIO_SERVERPORT  8883
 #define AIO_USERNAME    "jonah0502"
-#define AIO_KEY         "aio_ZRLE308nGaeLzx3IxoA71xILR6Bw"
+#define AIO_KEY         "aio_RpgT22K66ufgAcuckNf4509oafh7"
 
 /************ Global State (you don't need to change this!) ******************/
 
-
 //Set up the wifi client
-WiFiClient client;
+WiFiSSLClient client;
 
 Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_KEY);
 
